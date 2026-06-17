@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// Inseriamo gli indirizzi reali direttamente qui per bypassare i blocchi di Vercel
+const supabaseUrl = 'https://iwszqtovnwtzbnylhpd.supabase.co'
+// INCOLLA LA TUA CHIAVE REALE AL POSTO DI QUESTA SCRITTA, MANTENENDO GLI APICI ' '
+const supabaseAnonKey = 'sb_publishable_CXj-Borhy-db_Rh30N6wig_rAabBtgm' 
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export const revalidate = 0 
@@ -20,10 +23,14 @@ export default async function Home() {
 
   if (restError || !restaurant) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', color: '#ef4444', fontFamily: 'sans-serif' }}>
-        <div style={{ textAlign: 'center', padding: '24px', backgroundColor: '#ffffff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <p style={{ fontWeight: '600', marginBottom: '8px' }}>Errore nel caricamento del ristorante.</p>
-          <p style={{ fontSize: '12px', color: '#9ca3af' }}>Verifica le credenziali o la connessione al database.</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', color: '#ef4444', fontFamily: 'sans-serif', padding: '20px' }}>
+        <div style={{ textAlign: 'center', padding: '24px', backgroundColor: '#ffffff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', maxWidth: '500px' }}>
+          <p style={{ fontWeight: '600', marginBottom: '8px' }}>Errore nella connessione a Supabase</p>
+          <div style={{ textAlign: 'left', backgroundColor: '#f3f4f6', padding: '12px', borderRadius: '6px', fontSize: '12px', color: '#374151', overflowX: 'auto', fontFamily: 'monospace' }}>
+            <strong>Messaggio:</strong> {restError?.message || 'Ristorante nullo (Nessun dato trovato)'} <br/>
+            <strong>Codice errore:</strong> {restError?.code || 'Nessuno'} <br/>
+            <strong>Dettagli:</strong> {restError?.details || 'Nessuno'}
+          </div>
         </div>
       </div>
     )
@@ -33,7 +40,7 @@ export default async function Home() {
     <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', color: '#1f2937', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
       {/* Header */}
       <header style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '48px 24px', textAlign: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: 0, trackingTight: '-0.025em' }}>{restaurant.name}</h1>
+        <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: 0 }}>{restaurant.name}</h1>
         <p style={{ marginTop: '8px', marginBottom: 0, color: '#fee2e2', fontStyle: 'italic' }}>{restaurant.description}</p>
         <div style={{ marginTop: '16px', fontSize: '14px', color: '#fca5a5' }}>
           📍 {restaurant.address} • 📞 +{restaurant.phone_whatsapp}
