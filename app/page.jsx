@@ -1,24 +1,43 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Inizializzazione tramite l'integrazione ufficiale di Supabase su Vercel
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// GENERAZIONE DINAMICA DEI METADATI (Titolo della scheda del browser e SEO)
+export async function generateMetadata() {
+  const { data: restaurant } = await supabase
+    .from('restaurants')
+    .select('name, description')
+    .eq('id', 1)
+    .single()
+
+  return {
+    title: restaurant ? `${restaurant.name} - Menu Digitale` : 'Menu Digitale',
+    description: restaurant ? restaurant.description : 'Sfoglia il nostro menu',
+  }
+}
+
+// Disattiva la cache per avere dati sempre freschi dal database ad ogni caricamento
 export const revalidate = 0 
 
 export default async function Home() {
+  // Recupero dei dati del ristorante con ID 1
   const { data: restaurant, error: restError } = await supabase
     .from('restaurants')
     .select('*')
     .eq('id', 1)
     .single()
 
+  // Recupero di tutte le pizze/piatti associati al ristorante 1
   const { data: menuItems, error: menuError } = await supabase
     .from('menu')
     .select('*')
     .eq('restaurant_id', 1)
 
+  // Schermata di caricamento/errore di sicurezza se il database non risponde
   if (restError || !restaurant) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fcfbf7]">
@@ -30,12 +49,13 @@ export default async function Home() {
     )
   }
 
+  // Estraiamo le categorie uniche presenti nel database per dividerle in sezioni
   const categories = menuItems ? Array.from(new Set(menuItems.map(item => item.category))) : []
 
   return (
     <div className="min-h-screen bg-[#fcfbf7] text-stone-800">
       
-      {/* HERO HEADER: Sfondo immagine perfetto con testi BIANCHI ben contrastati */}
+      {/* HERO HEADER: Sfondo immagine con testi bianchi perfettamente leggibili */}
       <header 
         className="relative bg-stone-950 text-white py-36 px-6 text-center bg-cover bg-center"
         style={{ 
@@ -86,12 +106,12 @@ export default async function Home() {
         ) : (
           categories.map((category) => (
             <div key={category} className="mb-16">
-              {/* Categoria del Menu stile Trattoria Italiana */}
+              {/* Categoria del Menu (es. Classiche, Moderne) */}
               <h3 className="text-lg font-bold text-amber-900 tracking-wider uppercase mb-8 border-b border-stone-200 pb-3 flex items-center gap-2">
                 <span className="text-amber-600">✦</span> {category}
               </h3>
 
-              {/* Griglia delle Card Pizze bianche/pulite su sfondo panna */}
+              {/* Griglia delle Card delle Pizze */}
               <div className="grid gap-6 md:grid-cols-2">
                 {menuItems
                   .filter(item => item.category === category)
