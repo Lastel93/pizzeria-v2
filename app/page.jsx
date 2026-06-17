@@ -7,14 +7,12 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export const revalidate = 0 
 
 export default async function Home() {
-  // Prendiamo il ristorante con ID 1 (Pizzeria dai Burini)
   const { data: restaurant, error: restError } = await supabase
     .from('restaurants')
     .select('*')
     .eq('id', 1)
     .single()
 
-  // Prendiamo i piatti del menu associati
   const { data: menuItems, error: menuError } = await supabase
     .from('menu')
     .select('*')
@@ -22,50 +20,50 @@ export default async function Home() {
 
   if (restError || !restaurant) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-6 bg-white rounded-lg shadow-sm">
-          <p className="text-red-500 font-semibold mb-2">Errore nel caricamento del ristorante.</p>
-          <p className="text-xs text-gray-400">Verifica di aver disattivato l'RLS su Supabase per le tabelle 'restaurants' e 'menu'.</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', color: '#ef4444', fontFamily: 'sans-serif' }}>
+        <div style={{ textAlign: 'center', padding: '24px', backgroundColor: '#ffffff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <p style={{ fontWeight: '600', marginBottom: '8px' }}>Errore nel caricamento del ristorante.</p>
+          <p style={{ fontSize: '12px', color: '#9ca3af' }}>Verifica le credenziali o la connessione al database.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans">
+    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', color: '#1f2937', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
       {/* Header */}
-      <header className="bg-red-600 text-white py-12 text-center shadow-md">
-        <h1 className="text-4xl font-bold tracking-tight">{restaurant.name}</h1>
-        <p className="mt-2 text-red-100 italic">{restaurant.description}</p>
-        <div className="mt-4 text-sm text-red-200">
+      <header style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '48px 24px', textAlign: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+        <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: 0, trackingTight: '-0.025em' }}>{restaurant.name}</h1>
+        <p style={{ marginTop: '8px', marginBottom: 0, color: '#fee2e2', fontStyle: 'italic' }}>{restaurant.description}</p>
+        <div style={{ marginTop: '16px', fontSize: '14px', color: '#fca5a5' }}>
           📍 {restaurant.address} • 📞 +{restaurant.phone_whatsapp}
         </div>
       </header>
 
       {/* Menu */}
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        <h2 className="text-2xl font-bold text-center mb-8 border-b-2 border-red-500 pb-2 max-w-xs mx-auto">
+      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '48px 16px' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: 'bold', textAlign: 'center', marginBottom: '32px', borderBottom: '2px solid #dc2626', paddingBottom: '8px', maxWidth: '200px', marginLeft: 'auto', marginRight: 'auto' }}>
           Il Nostro Menu
         </h2>
 
         {menuError || !menuItems || menuItems.length === 0 ? (
-          <p className="text-center text-gray-500 bg-white p-8 rounded-lg shadow-sm">
-            Non ci sono ancora pizze nel menu o l'accesso è bloccato dall'RLS.
+          <p style={{ textAlign: 'center', color: '#6b7280', backgroundColor: '#ffffff', padding: '32px', borderRadius: '8px' }}>
+            Non ci sono ancora pizze nel menu.
           </p>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div style={{ display: 'grid', gap: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
             {menuItems.map((item) => (
-              <div key={item.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start hover:shadow-md transition-shadow">
+              <div key={item.id} style={{ backgroundColor: '#ffffff', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', border: '1px solid #f3f4f6' }}>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold text-gray-900">{item.name}</h3>
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: '#111827' }}>{item.name}</h3>
+                    <span style={{ fontSize: '12px', backgroundColor: '#f3f4f6', color: '#4b5563', padding: '2px 8px', borderRadius: '4px' }}>
                       {item.category}
                     </span>
                   </div>
-                  <p className="text-gray-600 mt-1 text-sm">{item.description}</p>
+                  <p style={{ color: '#4b5563', marginTop: '4px', marginBottom: 0, fontSize: '14px' }}>{item.description}</p>
                 </div>
-                <span className="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-sm shrink-0">
+                <span style={{ backgroundColor: '#fee2e2', color: '#b91c1c', fontWeight: 'bold', padding: '4px 12px', borderRadius: '9999px', fontSize: '14px', whiteSpace: 'nowrap' }}>
                   {parseFloat(item.price).toFixed(2)} €
                 </span>
               </div>
@@ -74,7 +72,8 @@ export default async function Home() {
         )}
       </main>
 
-      <footer className="text-center py-8 text-gray-400 text-xs border-t border-gray-200 mt-12">
+      {/* Footer */}
+      <footer style={{ textAlign: 'center', padding: '32px 16px', color: '#9ca3af', fontSize: '12px', borderTop: '1px solid #e5e7eb', marginTop: '48px' }}>
         © 2026 {restaurant.name}. Powered by Next.js & Supabase.
       </footer>
     </div>
