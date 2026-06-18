@@ -1,4 +1,4 @@
-// app/layout.js
+// app/layout.jsx
 import { RestaurantProvider } from '@/context/RestaurantContext';
 import './globals.css';
 
@@ -12,7 +12,6 @@ export default function RootLayout({ children }) {
     <html lang="it">
       <body className="antialiased">
         <RestaurantProvider>
-          {/* Qui verrà renderizzato il contenuto delle tue pagine */}
           <main>
             {children}
           </main>
