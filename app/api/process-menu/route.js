@@ -12,10 +12,24 @@ export async function POST(req) {
       messages: [
         {
           role: "system",
-          content: `Sei un esperto di digitalizzazione menù. Estrai piatti e prezzi da questa foto.
-          Restituisci ESCLUSIVAMENTE un JSON con questa struttura: 
-          { "menuItems": [{ "name": "...", "description": "...", "price": 0.00, "category": "..." }] }
-          Usa solo queste categorie: "Pizze Classiche", "Pizze Speciali", "Bibite", "Birre Artigianali".`
+          content: `Sei un esperto di digitalizzazione menù. Analizza l'immagine e raggruppa i prodotti in categorie.
+          Restituisci ESCLUSIVAMENTE un JSON strutturato così:
+          {
+            "menu": [
+              {
+                "category": "Nome Categoria",
+                "items": [
+                  {
+                    "name": "Nome Piatto",
+                    "description": "Breve descrizione",
+                    "variations": [{"type": "Prezzo Base", "price": 0.00}],
+                    "extra": {}
+                  }
+                ]
+              }
+            ]
+          }
+          Se trovi più prezzi per lo stesso piatto (es. Trancio/Teglia), mettili tutti nell'array 'variations'.`
         },
         {
           role: "user",
@@ -28,8 +42,10 @@ export async function POST(req) {
       response_format: { type: "json_object" },
     });
 
-    return NextResponse.json(JSON.parse(response.choices[0].message.content));
+    const parsedData = JSON.parse(response.choices[0].message.content);
+    return NextResponse.json(parsedData);
   } catch (error) {
+    console.error("Errore API:", error);
     return NextResponse.json({ error: "Errore nella scansione" }, { status: 500 });
   }
 }
