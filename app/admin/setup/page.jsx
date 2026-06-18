@@ -1,17 +1,22 @@
-export const dynamic = 'force-dynamic';
-
 'use client'
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
-
 export default function AdminSetup() {
+  // Spostiamo la creazione del client dentro il componente o usiamo useMemo
+  const supabase = useMemo(() => {
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '', 
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+    );
+  }, []);
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
+  // ... (tutto il resto del codice rimane uguale)
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -43,7 +48,6 @@ export default function AdminSetup() {
     <div className="p-6 max-w-lg mx-auto bg-[#FAF8F5] min-h-screen">
       <h1 className="text-2xl font-black mb-6">Setup Menù</h1>
       
-      {/* AREA CAMERA */}
       <div className="space-y-4 mb-8">
         <video ref={videoRef} autoPlay playsInline className="w-full rounded-2xl bg-black h-64 object-cover" />
         <div className="flex gap-2">
@@ -52,7 +56,6 @@ export default function AdminSetup() {
         </div>
       </div>
 
-      {/* AREA VERIFICA */}
       {loading && <p className="animate-pulse text-center">L'AI sta leggendo il menù...</p>}
       
       {items.length > 0 && (
