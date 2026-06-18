@@ -10,23 +10,29 @@ export function RestaurantProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Aggiungiamo un check per sicurezza
+    if (!supabase) return; 
+
     async function fetchRestaurant() {
-      // 1. Prendiamo l'utente corrente
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // 2. Cerchiamo il ristorante associato all'ID dell'utente
-        const { data, error } = await supabase
-          .from('restaurants')
-          .select('*')
-          .eq('owner_id', user.id)
-          .single();
-          
-        if (data) {
-          setRestaurant(data);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          const { data, error } = await supabase
+            .from('restaurants')
+            .select('*')
+            .eq('owner_id', user.id)
+            .single();
+            
+          if (data) {
+            setRestaurant(data);
+          }
         }
+      } catch (err) {
+        console.error("Errore nel caricamento del ristorante:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchRestaurant();
   }, []);
