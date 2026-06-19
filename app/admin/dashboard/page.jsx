@@ -6,8 +6,13 @@ import Link from 'next/link';
 export default function DashboardPage() {
   const [restaurant, setRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updatingData, setUpdatingData] = useState(false); // Stato per il caricamento del salvataggio
   
-  // Stato per gestire gli orari in modo semplice
+  // Stati per gestire i campi modificabili del modulo
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+
+  // Stato per gestire gli orari in modo semplice (visivo)
   const [orari, setOrari] = useState({
     Lunedì: { aperto: true, inizio: "12:00", fine: "23:00" },
     Martedì: { aperto: true, inizio: "12:00", fine: "23:00" },
@@ -31,11 +36,43 @@ export default function DashboardPage() {
 
       if (data) {
         setRestaurant(data);
+        setName(data.name || '');
+        setAddress(data.address || '');
       }
       setLoading(false);
     }
     loadData();
   }, []);
+
+  // FUNZIONE PER AGGIORNARE I DATI NEL DATABASE
+  const handleUpdateData = async () => {
+    if (!name.trim()) {
+      alert("Il nome del ristorante non può essere vuoto.");
+      return;
+    }
+
+    try {
+      setUpdatingData(true);
+      
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ 
+          name: name, 
+          address: address 
+        })
+        .eq('id', restaurant.id);
+
+      if (error) throw error;
+
+      // Aggiorniamo lo stato locale del ristorante per riflettere il cambio nell'header
+      setRestaurant(prev => ({ ...prev, name, address }));
+      alert("Dati aggiornati con successo!");
+    } catch (error) {
+      alert("Errore durante l'aggiornamento: " + error.message);
+    } finally {
+      setUpdatingData(false);
+    }
+  };
 
   // Gestore del cambio orario visivo
   const handleOrarioChange = (giorno, campo, valore) => {
@@ -63,10 +100,10 @@ export default function DashboardPage() {
       <header className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-stone-200 pb-6">
         <div>
           <h1 className="text-4xl font-bold text-stone-900 tracking-tight">{restaurant.name}</h1>
-          <p className="text-stone-500 mt-1">📍 {restaurant.address || "Indirizzo non configurato (Piazza della Pizzeria, 1)"}</p>
+          <p className="text-stone-500 mt-1">📍 {restaurant.address || "Indirizzo non configurato"}</p>
         </div>
         
-        {/* IL PULSANTONE MENU CHE VOLEVI */}
+        {/* IL PULSANTONE MENU */}
         <Link href="/admin/menu" className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-[#1C2D21] rounded-xl hover:bg-[#2d4a36] shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 text-center">
           🍔 GESTISCI IL TUO MENU
         </Link>
@@ -84,7 +121,8 @@ export default function DashboardPage() {
                 <label className="block text-xs font-bold uppercase text-stone-400 mb-1">Nome Ristorante</label>
                 <input 
                   type="text" 
-                  defaultValue={restaurant.name} 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
                   className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium text-stone-800 focus:outline-none focus:border-[#1C2D21]"
                 />
               </div>
@@ -92,12 +130,19 @@ export default function DashboardPage() {
                 <label className="block text-xs font-bold uppercase text-stone-400 mb-1">Indirizzo Completo</label>
                 <input 
                   type="text" 
-                  defaultValue={restaurant.address || "Via Roma, 12, Milano"} 
+                  value={address} 
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Via Roma, 12, Milano"
                   className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium text-stone-800 focus:outline-none focus:border-[#1C2D21]"
                 />
               </div>
-              <button className="w-full py-2.5 bg-stone-100 text-[#1C2D21] font-semibold rounded-xl hover:bg-stone-200 transition text-sm">
-                Aggiorna Dati
+              
+              <button 
+                onClick={handleUpdateData}
+                disabled={updatingData}
+                className="w-full py-2.5 bg-[#1C2D21] text-white font-semibold rounded-xl hover:bg-[#2d4a36] transition text-sm disabled:opacity-50"
+              >
+                {updatingData ? "Aggiornamento..." : "Aggiorna Dati"}
               </button>
             </div>
           </div>
@@ -126,7 +171,7 @@ export default function DashboardPage() {
                     </button>
                   </div>
 
-                  {/* Selettori Orario (Disabilitati se Chiuso) */}
+                  {/* Selettori Orario */}
                   <div className="flex items-center gap-2">
                     <input 
                       type="time" 
