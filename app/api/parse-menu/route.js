@@ -19,13 +19,12 @@ export async function POST(request) {
         messages: [
           {
             role: 'system',
-            content: `Sei un esperto di trascrizione menu. Il tuo unico compito è ESTRARRE LETTERALMENTE ogni riga di testo che rappresenta un piatto o una bevanda nell'immagine.
-            REGOLE FERREE:
-            1. Ritorna un JSON con una chiave "menu" che contiene un array PIATTO di oggetti.
-            2. Ogni oggetto deve avere: "name", "description", "price", "category".
-            3. Se il prezzo non è leggibile, usa stringa vuota "".
-            4. Se la descrizione non è presente, usa stringa vuota "".
-            5. Mantieni i nomi piatti esattamente come scritti.`
+           content: `Sei un esperto di trascrizione menu. 
+REGOLE:
+1. Ritorna un JSON con "menu" contenente oggetti con: "name", "description", "price1", "price2", "price3", "category".
+2. Se un prezzo non esiste, metti stringa vuota o "0".
+3. Estrai ogni variante di prezzo che trovi sulla riga del piatto.
+4. Se non capisci la category, lascia vuota o "0"`
           },
           {
             role: 'user',
