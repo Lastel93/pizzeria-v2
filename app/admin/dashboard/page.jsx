@@ -81,7 +81,7 @@ export default function DashboardPage() {
         </div>
         
         <div className="flex flex-col gap-2">
-          <Link href={`/menu/${restaurant.id}`} target="_blank" className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition text-center">
+          <Link href={`/admin/menu/${restaurant.id}`} target="_blank" target="_blank" className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition text-center">
             👁️ Vedi Menu Online
           </Link>
           <Link href="/admin/menu" className="px-8 py-3 bg-[#1C2D21] text-white font-bold rounded-xl hover:bg-[#2d4a36] transition text-center">
