@@ -45,6 +45,41 @@ export default function MenuPage() {
     setLocalPreviews(prev => [...prev, ...newPreviews]);
   };
 
+  const runAIAnalysis = async (imageUrl) => {
+    try {
+      setAnalyzing(true);
+      const response = await fetch('/api/parse-menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl }),
+      });
+      
+      const datiGerarchici = await response.json();
+      if (!Array.isArray(datiGerarchici)) throw new Error("Formato dati non valido");
+
+      // Appiattiamo i dati per la tabella
+      const piattiPiatti = [];
+      datiGerarchici.forEach(cat => {
+        cat.items.forEach(item => {
+          piattiPiatti.push({
+            name: item.name,
+            description: item.description || '',
+            price: item.price || '0',
+            category: cat.category || 'Varie',
+            restaurant_id: restaurant.id
+          });
+        });
+      });
+
+      await supabase.from('menu_items').insert(piattiPiatti);
+      fetchMenuItems(restaurant.id);
+    } catch (err) {
+      alert("Errore lettura IA: " + err.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const handleSaveAllMenu = async () => {
     if (!localPreviews.length || !restaurant) return;
     try {
@@ -66,41 +101,6 @@ export default function MenuPage() {
     } catch (error) {
       alert("Errore caricamento: " + error.message);
       setUploading(false);
-    }
-  };
-
-  const runAIAnalysis = async (imageUrl) => {
-    try {
-      setAnalyzing(true);
-      const response = await fetch('/api/parse-menu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl }),
-      });
-      
-      const datiGerarchici = await response.json();
-      if (!Array.isArray(datiGerarchici)) throw new Error("Formato dati non valido");
-
-      // Appiattiamo i dati per la tabella
-      const piattiPiatti = [];
-      datiGerarchici.forEach(cat => {
-        cat.items.forEach(item => {
-          piattiPiatti.push({
-            name: item.name,
-            description: item.description,
-            price: item.price,
-            category: cat.category,
-            restaurant_id: restaurant.id
-          });
-        });
-      });
-
-      await supabase.from('menu_items').insert(piattiPiatti);
-      fetchMenuItems(restaurant.id);
-    } catch (err) {
-      alert("Errore lettura IA: " + err.message);
-    } finally {
-      setAnalyzing(false);
     }
   };
 
