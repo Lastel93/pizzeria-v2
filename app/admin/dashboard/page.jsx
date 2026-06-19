@@ -1,18 +1,18 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [restaurant, setRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [updatingData, setUpdatingData] = useState(false); // Stato per il caricamento del salvataggio
+  const [updatingData, setUpdatingData] = useState(false);
   
-  // Stati per gestire i campi modificabili del modulo
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
 
-  // Stato per gestire gli orari in modo semplice (visivo)
   const [orari, setOrari] = useState({
     Lunedì: { aperto: true, inizio: "12:00", fine: "23:00" },
     Martedì: { aperto: true, inizio: "12:00", fine: "23:00" },
@@ -26,7 +26,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.push('/login'); return; }
 
       const { data } = await supabase
         .from('restaurants')
@@ -42,164 +42,93 @@ export default function DashboardPage() {
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, [router]);
 
-  // FUNZIONE PER AGGIORNARE I DATI NEL DATABASE
   const handleUpdateData = async () => {
-    if (!name.trim()) {
-      alert("Il nome del ristorante non può essere vuoto.");
-      return;
-    }
-
+    if (!name.trim()) { alert("Il nome del ristorante non può essere vuoto."); return; }
     try {
       setUpdatingData(true);
-      
-      const { error } = await supabase
-        .from('restaurants')
-        .update({ 
-          name: name, 
-          address: address 
-        })
-        .eq('id', restaurant.id);
-
+      const { error } = await supabase.from('restaurants').update({ name, address }).eq('id', restaurant.id);
       if (error) throw error;
-
-      // Aggiorniamo lo stato locale del ristorante per riflettere il cambio nell'header
       setRestaurant(prev => ({ ...prev, name, address }));
       alert("Dati aggiornati con successo!");
-    } catch (error) {
-      alert("Errore durante l'aggiornamento: " + error.message);
-    } finally {
-      setUpdatingData(false);
-    }
+    } catch (error) { alert("Errore durante l'aggiornamento: " + error.message); }
+    finally { setUpdatingData(false); }
   };
 
-  // Gestore del cambio orario visivo
+  const handleResetPassword = async () => {
+    const email = (await supabase.auth.getUser()).data.user.email;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/update-password`,
+    });
+    if (error) alert(error.message);
+    else alert("Controlla la tua email per reimpostare la password!");
+  };
+
   const handleOrarioChange = (giorno, campo, valore) => {
-    setOrari(prev => ({
-      ...prev,
-      [giorno]: {
-        ...prev[giorno],
-        [campo]: valore
-      }
-    }));
+    setOrari(prev => ({ ...prev, [giorno]: { ...prev[giorno], [campo]: valore } }));
   };
 
-  if (loading) {
-    return <div className="flex h-full items-center justify-center text-stone-500 animate-pulse">Caricamento...</div>;
-  }
-
-  if (!restaurant) {
-    return <div className="p-10 text-center text-stone-500 mt-20">Nessun ristorante configurato.</div>;
-  }
+  if (loading) return <div className="flex h-full items-center justify-center text-stone-500 animate-pulse">Caricamento...</div>;
+  if (!restaurant) return <div className="p-10 text-center text-stone-500 mt-20">Nessun ristorante configurato.</div>;
 
   return (
     <div className="p-10 max-w-5xl mx-auto w-full">
-      
-      {/* HEADER PRINCIPALE */}
       <header className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-stone-200 pb-6">
         <div>
           <h1 className="text-4xl font-bold text-stone-900 tracking-tight">{restaurant.name}</h1>
           <p className="text-stone-500 mt-1">📍 {restaurant.address || "Indirizzo non configurato"}</p>
         </div>
         
-        {/* IL PULSANTONE MENU */}
-        <Link href="/admin/menu" className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-[#1C2D21] rounded-xl hover:bg-[#2d4a36] shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 text-center">
-          🍔 GESTISCI IL TUO MENU
-        </Link>
+        <div className="flex flex-col gap-2">
+          <Link href={`/menu/${restaurant.id}`} target="_blank" className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition text-center">
+            👁️ Vedi Menu Online
+          </Link>
+          <Link href="/admin/menu" className="px-8 py-3 bg-[#1C2D21] text-white font-bold rounded-xl hover:bg-[#2d4a36] transition text-center">
+            🍔 GESTISCI IL TUO MENU
+          </Link>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* SCHEDA INFORMAZIONI GENERALI */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
             <h3 className="text-lg font-bold text-stone-800 mb-4">Dati Locale</h3>
-            
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase text-stone-400 mb-1">Nome Ristorante</label>
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium text-stone-800 focus:outline-none focus:border-[#1C2D21]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase text-stone-400 mb-1">Indirizzo Completo</label>
-                <input 
-                  type="text" 
-                  value={address} 
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Via Roma, 12, Milano"
-                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl font-medium text-stone-800 focus:outline-none focus:border-[#1C2D21]"
-                />
-              </div>
-              
-              <button 
-                onClick={handleUpdateData}
-                disabled={updatingData}
-                className="w-full py-2.5 bg-[#1C2D21] text-white font-semibold rounded-xl hover:bg-[#2d4a36] transition text-sm disabled:opacity-50"
-              >
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl" />
+              <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl" />
+              <button onClick={handleUpdateData} disabled={updatingData} className="w-full py-2.5 bg-[#1C2D21] text-white font-semibold rounded-xl">
                 {updatingData ? "Aggiornamento..." : "Aggiorna Dati"}
+              </button>
+              <button onClick={handleResetPassword} className="w-full py-2 text-stone-400 hover:text-stone-600 text-xs underline">
+                Reimposta password
               </button>
             </div>
           </div>
         </div>
 
-        {/* SPECCHIETTO ORARI USER-FRIENDLY */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-stone-800">Orari di Apertura</h3>
-              <span className="text-xs text-stone-400 font-medium">Configura i turni settimanali</span>
-            </div>
-
+            <h3 className="text-lg font-bold text-stone-800 mb-6">Orari di Apertura</h3>
             <div className="space-y-3">
               {Object.keys(orari).map((giorno) => (
                 <div key={giorno} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-stone-100 rounded-xl bg-stone-50 gap-3">
-                  
-                  {/* Nome Giorno e Toggle Stato */}
                   <div className="flex items-center gap-4 min-w-[140px]">
                     <span className="font-semibold text-stone-700 text-sm w-20">{giorno}</span>
-                    <button 
-                      onClick={() => handleOrarioChange(giorno, 'aperto', !orari[giorno].aperto)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition ${orari[giorno].aperto ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}
-                    >
+                    <button onClick={() => handleOrarioChange(giorno, 'aperto', !orari[giorno].aperto)} className={`px-3 py-1 rounded-full text-xs font-bold ${orari[giorno].aperto ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
                       {orari[giorno].aperto ? 'Aperto' : 'Chiuso'}
                     </button>
                   </div>
-
-                  {/* Selettori Orario */}
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="time" 
-                      value={orari[giorno].inizio}
-                      disabled={!orari[giorno].aperto}
-                      onChange={(e) => handleOrarioChange(giorno, 'inizio', e.target.value)}
-                      className="p-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-700 disabled:opacity-50"
-                    />
+                    <input type="time" value={orari[giorno].inizio} onChange={(e) => handleOrarioChange(giorno, 'inizio', e.target.value)} className="p-1.5 bg-white border border-stone-200 rounded-lg text-sm" />
                     <span className="text-stone-400 text-sm">al</span>
-                    <input 
-                      type="time" 
-                      value={orari[giorno].fine}
-                      disabled={!orari[giorno].aperto}
-                      onChange={(e) => handleOrarioChange(giorno, 'fine', e.target.value)}
-                      className="p-1.5 bg-white border border-stone-200 rounded-lg text-sm text-stone-700 disabled:opacity-50"
-                    />
+                    <input type="time" value={orari[giorno].fine} onChange={(e) => handleOrarioChange(giorno, 'fine', e.target.value)} className="p-1.5 bg-white border border-stone-200 rounded-lg text-sm" />
                   </div>
-
                 </div>
               ))}
             </div>
-
-            <button className="w-full mt-6 py-3 bg-[#1C2D21]/10 text-[#1C2D21] font-bold rounded-xl hover:bg-[#1C2D21]/15 transition text-sm">
-              Salva Orari Settimanali
-            </button>
           </div>
         </div>
-
       </div>
     </div>
   );
