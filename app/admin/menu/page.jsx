@@ -72,7 +72,7 @@ export default function MenuPage() {
     URL.revokeObjectURL(urlToRelease); 
   };
 
-  // Carica le immagini e lancia la conversione IA
+  // Carica le immagini e lancia la conversione IA sicura
   const handleSaveAllMenu = async () => {
     if (!localPreviews.length || !restaurant) return;
 
@@ -105,44 +105,57 @@ export default function MenuPage() {
       setLocalPreviews([]);
       fetchUploadedDocuments(restaurant.id);
 
-      // Sganciamo l'upload e passiamo alla lettura IA dell'ultimo file inserito
+      // Finito l'upload su Supabase Storage, avviamo l'analisi IA sicura
       setUploading(false);
       runAIAnalysis(lastUploadedUrl);
 
     } catch (error) {
-      alert("Errore: " + error.message);
+      alert("Errore durante il caricamento: " + error.message);
       setUploading(false);
     }
   };
 
-  // STRUTTURA DI LETTURA E CONVERSIONE IMMAGINE -> MENU EDITABILE
+  // CHIAMATA ALLA ROTTA BACKEND SICURA (OPENAI_API_KEY non viene esposta sul browser)
   const runAIAnalysis = async (imageUrl) => {
     try {
       setAnalyzing(true);
       
-      // [QUI CI VA IL TUO CODICE VECCHIO DI LETTURA IMMAGINE]
-      // Esempio: chiamata a OpenAI / Vision API o Edge Function che analizza l'imageUrl.
-      
-      // Simuliamo il risultato della conversione per popolare subito la tabella
-      const mockDatiEstratti = [
-        { name: "Margherita", description: "Pomodoro, mozzarella, basilico", price: 7.50, category: "Pizze Classiche" },
-        { name: "Diavola", description: "Pomodoro, mozzarella, salame piccante", price: 8.50, category: "Pizze Classiche" },
-        { name: "Patatine Fritte", description: "Porzione abbondante con salse", price: 4.00, category: "Antipasti" },
-        { name: "Birra Media", description: "Alla spina, bionda", price: 5.00, category: "Bevande" }
-      ];
+      const response = await fetch('/api/parse-menu', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageUrl }),
+      });
 
-      // Prepariamo i dati per Supabase legandoli al ristorante
-      const piattiPronti = mockDatiEstratti.map(p => ({
-        ...p,
+      if (!response.ok) {
+        throw new Error("Il server non è riuscito ad elaborare la richiesta di lettura dell'immagine.");
+      }
+
+      const piattiEstratti = await response.json();
+
+      if (!piattiEstratti || piattiEstratti.length === 0) {
+        alert("L'IA non ha rilevato testi o piatti leggibili. Prova a caricare uno scatto più nitido.");
+        return;
+      }
+
+      // Associazioni obbligatorie con il restaurant_id corrente prima dell'insert
+      const piattiPronti = piattiEstratti.map(p => ({
+        name: p.name,
+        description: p.description || '',
+        price: parseFloat(p.price) || 0,
+        category: p.category || 'Varie',
         restaurant_id: restaurant.id
       }));
 
-      // Inseriamo i piatti estratti nel DB
+      // Inseriamo i dati reali nel database Supabase
       const { error } = await supabase.from('menu_items').insert(piattiPronti);
       if (error) throw error;
 
+      // Sincronizziamo lo stato locale ripescando i record freschi dal DB
       await fetchMenuItems(restaurant.id);
-      alert("IA: Immagine letta con successo! Piatti inseriti nel menu editabile qui sotto.");
+      alert(`Ottimo! L'IA ha letto l'immagine e ha importato ${piattiPronti.length} piatti reali nel listino digitale.`);
+
     } catch (err) {
       alert("Errore lettura IA: " + err.message);
     } finally {
@@ -231,7 +244,7 @@ export default function MenuPage() {
         <div className="p-8 bg-amber-50 border border-amber-200 rounded-2xl text-center space-y-3">
           <div className="text-2xl animate-spin inline-block">⏳</div>
           <h4 className="text-lg font-bold text-amber-800">L'algoritmo intelligente sta leggendo l'immagine...</h4>
-          <p className="text-sm text-amber-600">Sto estraendo nomi, descrizioni e prezzi per inserirli nella tabella sotto.</p>
+          <p className="text-sm text-amber-600">Sto estraendo i veri nomi, descrizioni e prezzi per inserirli nella tabella sotto.</p>
         </div>
       )}
 
