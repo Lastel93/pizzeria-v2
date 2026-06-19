@@ -13,79 +13,64 @@ export default function MenuPubblico({ params }) {
         .select('name, address, menu_items(*)')
         .eq('id', params.id)
         .single();
-      if (data) setMenuData(data);
+      
+      if (data) {
+        // Ordiniamo per l'ID o created_at per mantenere l'ordine di inserimento (scansione)
+        const sortedItems = (data.menu_items || []).sort((a, b) => a.id - b.id);
+        setMenuData({ ...data, menu_items: sortedItems });
+      }
       setLoading(false);
     }
     fetchMenu();
   }, [params.id]);
 
-  // LOGICA GERARCHICA AGGIORNATA
-  const classifyItem = (item) => {
-    const text = `${item.name} ${item.category || ""}`.toLowerCase();
-    // Pizze
-    if (/pizza/i.test(text)) return { main: "Pizze", sub: /bianc/i.test(text) ? "Pizze Bianche" : "Pizze Rosse" };
-    // Piatti
-    if (/primo/i.test(text)) return { main: "Piatti", sub: "Primi" };
-    if (/secondo/i.test(text)) return { main: "Piatti", sub: "Secondi" };
-    if (/hamburg/i.test(text)) return { main: "Piatti", sub: "Hamburger" };
-    if (/kebab/i.test(text)) return { main: "Piatti", sub: "Kebab" };
-    if (/fritt|patatin/i.test(text)) return { main: "Piatti", sub: "Fritti" };
-    if (/falafel/i.test(text)) return { main: "Piatti", sub: "Falafel" };
-    if (/contorno/i.test(text)) return { main: "Piatti", sub: "Contorni" };
-    // Dolci
-    if (/dolce|gelat|ghiaccio/i.test(text)) return { main: "Dolci", sub: "Dolci & Gelati" };
-    // Bevande
-    if (/acq|bibit|birr|vin|amar|caff/i.test(text)) return { main: "Bevande", sub: "Bevande" };
-    // Extra
-    return { main: "Extra", sub: "Altro" };
-  };
-
   if (loading) return <div>Caricamento...</div>;
 
-  const hierarchy = (menuData.menu_items || []).reduce((acc, item) => {
-    const { main, sub } = classifyItem(item);
-    if (!acc[main]) acc[main] = {};
-    if (!acc[main][sub]) acc[main][sub] = [];
-    acc[main][sub].push(item);
+  // Raggruppiamo mantenendo l'ordine di comparsa
+  const grouped = (menuData.menu_items || []).reduce((acc, item) => {
+    const cat = item.category || "Extra";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
     return acc;
   }, {});
 
-  const order = ["Pizze", "Piatti", "Dolci", "Extra", "Bevande"];
+  // Ordine forzato Pizze Rosse > Bianche > Altro
+  const orderedKeys = Object.keys(grouped).sort((a, b) => {
+    if (a === "Pizze Rosse") return -1;
+    if (b === "Pizze Rosse") return 1;
+    if (a === "Pizze Bianche") return -1;
+    return 0;
+  });
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-8 font-serif" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #FF0000 0, #FF0000 10px, #FFFFFF 10px, #FFFFFF 20px)' }}>
-      <div className="bg-white p-8 md:p-12 max-w-4xl mx-auto shadow-2xl border-2 border-red-600">
+    <div className="min-h-screen bg-white p-4 font-serif" style={{ border: '20px solid red', borderImage: 'repeating-linear-gradient(45deg, red, red 10px, white 10px, white 20px) 20' }}>
+      <div className="max-w-4xl mx-auto p-6 bg-white">
         
-        {/* Header con layout Screenshot 2026-06-19 alle 15.18.18.jpg */}
-        <div className="flex justify-between items-start mb-8">
-          <button className="bg-red-600 text-white font-black px-6 py-4 transform -rotate-3 hover:scale-105 transition shadow-lg">ORDINA QUI</button>
-          <div className="text-center">
-            <h1 className="text-6xl font-black text-red-700 uppercase tracking-tighter">{menuData.name}</h1>
-            <p className="text-red-500 font-bold uppercase">{menuData.address}</p>
-          </div>
-          <div className="bg-red-600 text-white p-4 rounded-2xl text-xs font-bold w-32">
-            <div className="text-center font-black mb-1">ORARI</div>
-            LUN-DOM 10.00-23.00
-          </div>
+        {/* Header Design ispirato a Screenshot 2026-06-19 alle 15.18.18.jpg */}
+        <div className="flex justify-between items-start border-b-2 border-red-600 pb-6 mb-8">
+           <button className="bg-red-600 text-white font-black px-6 py-3 -rotate-2">ORDINA QUI</button>
+           <div className="text-center">
+             <h1 className="text-5xl font-black text-red-700 uppercase tracking-tighter">{menuData.name}</h1>
+             <p className="text-red-500 font-bold">{menuData.address}</p>
+           </div>
+           <div className="bg-red-600 text-white p-3 text-xs font-bold text-center">ORARI<br/>LUN-DOM 10.00-23.00</div>
         </div>
 
-        {/* Menu Items */}
-        {order.filter(m => hierarchy[m]).map(mainCat => (
-          <div key={mainCat} className="mt-8">
-            <h2 className="text-3xl font-black text-red-700 uppercase border-b-2 border-red-700 mb-6">{mainCat}</h2>
-            {Object.entries(hierarchy[mainCat]).map(([subCat, items]) => (
-              <div key={subCat} className="mb-6">
-                <h3 className="font-bold text-red-600 uppercase italic mb-3 underline">{subCat}</h3>
-                <div className="grid md:grid-cols-2 gap-x-8">
-                  {items.map((item, i) => (
-                    <div key={i} className="flex justify-between border-b border-red-100 py-2">
-                      <div><span className="font-bold text-red-900">{item.name}</span></div>
-                      <span className="font-bold text-red-700">€{item.price}</span>
-                    </div>
-                  ))}
+        {/* Visualizzazione lineare rispettando l'ordine di scansione */}
+        {orderedKeys.map(cat => (
+          <div key={cat} className="mb-8">
+            <h2 className="text-2xl font-black text-red-700 uppercase mb-4">{cat}</h2>
+            <div className="grid md:grid-cols-2 gap-x-12">
+              {grouped[cat].map((item, i) => (
+                <div key={i} className="flex justify-between border-b border-red-100 py-1">
+                  <div>
+                    <span className="font-bold text-red-900">{item.name}</span>
+                    <p className="text-[10px] text-red-400 italic">{item.description}</p>
+                  </div>
+                  <span className="font-bold text-red-700">€{item.price}</span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ))}
       </div>
