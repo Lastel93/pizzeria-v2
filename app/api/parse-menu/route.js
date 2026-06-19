@@ -16,12 +16,13 @@ export async function POST(request) {
         messages: [
           {
             role: 'system',
-            content: "Sei un esperto di digitalizzazione menu. Ritorna SEMPRE un JSON valido con chiave 'menu' contenente un array di oggetti {name, description, price, category}. Se non trovi nulla, ritorna {\"menu\": []}."
+            content: `Sei un esperto di digitalizzazione menu. Analizza l'immagine e raggruppa i piatti per categorie logiche (es: 'Antipasti', 'Pizze Rosse', 'Pizze Bianche', 'Bevande').
+            Ritorna SOLO questo JSON: {"menu": [{"category": "Nome Categoria", "items": [{"name": "...", "description": "...", "price": "..."}]}]}`
           },
           {
             role: 'user',
             content: [
-              { type: 'text', text: "Estrai i piatti da questo menu. Usa il formato JSON. Prezzo come stringa (es '5.00/8.00'), se non c'è metti '0'. Non aggiungere spiegazioni extra." },
+              { type: 'text', text: "Estrai e raggruppa il menu. Mantieni l'ordine logico delle portate. Se non trovi nulla, ritorna {\"menu\": []}." },
               { type: 'image_url', image_url: { url: imageUrl } }
             ]
           }
