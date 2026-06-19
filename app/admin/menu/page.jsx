@@ -72,17 +72,25 @@ export default function MenuPage() {
   const runAIAnalysis = async (imageUrl) => {
     try {
       setAnalyzing(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch('/api/parse-menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
+      
       const piattiEstratti = await response.json();
+      if (!response.ok || piattiEstratti.length === 0) throw new Error("Nessun piatto trovato o errore IA");
+      
       const piattiPronti = piattiEstratti.map(p => ({ ...p, restaurant_id: restaurant.id }));
       await supabase.from('menu_items').insert(piattiPronti);
       fetchMenuItems(restaurant.id);
     } catch (err) {
-      alert("Errore lettura IA: " + err.message);
+      alert("Errore lettura IA: " + (err.name === 'AbortError' ? "Tempo scaduto." : err.message));
     } finally {
       setAnalyzing(false);
     }
@@ -125,7 +133,6 @@ export default function MenuPage() {
       <Link href="/admin/dashboard" className="text-sm font-semibold underline">← Torna alla Dashboard</Link>
       <h1 className="text-4xl font-black">CARICA IL TUO MENU</h1>
 
-      {/* Tasti Caricamento */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <label className="flex items-center justify-center p-6 bg-[#1C2D21] text-white rounded-2xl cursor-pointer font-bold">📸 FOTOCAMERA <input type="file" accept="image/*" capture="environment" onChange={handleFileSelection} className="hidden" /></label>
         <label className="flex items-center justify-center p-6 bg-white border-2 border-[#1C2D21] rounded-2xl cursor-pointer font-bold">📁 GALLERIA <input type="file" accept="image/*" multiple onChange={handleFileSelection} className="hidden" /></label>
@@ -137,9 +144,8 @@ export default function MenuPage() {
         </button>
       )}
 
-      {analyzing && <div className="text-center p-4 bg-amber-100 rounded-lg">L'IA sta leggendo il menu...</div>}
+      {analyzing && <div className="text-center p-4 bg-amber-100 rounded-lg animate-pulse">L'IA sta leggendo il menu...</div>}
 
-      {/* Tabella */}
       <div className="bg-white border rounded-2xl p-6">
         <div className="flex gap-2 mb-6 flex-wrap">
           <button onClick={addEmptyRow} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">+ Aggiungi Riga</button>
