@@ -100,7 +100,7 @@ export default function MenuPage() {
       fetchUploadedDocuments(restaurant.id);
     } catch (error) {
       alert("Errore durante il salvataggio: " + error.message);
-    } file {
+    } finally {
       setUploading(false);
     }
   };
