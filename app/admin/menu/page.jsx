@@ -78,10 +78,7 @@ export default function MenuPage() {
         body: JSON.stringify({ imageUrl }),
       });
       const piattiEstratti = await response.json();
-      const piattiPronti = piattiEstratti.map(p => ({
-        ...p,
-        restaurant_id: restaurant.id
-      }));
+      const piattiPronti = piattiEstratti.map(p => ({ ...p, restaurant_id: restaurant.id }));
       await supabase.from('menu_items').insert(piattiPronti);
       fetchMenuItems(restaurant.id);
     } catch (err) {
@@ -93,6 +90,10 @@ export default function MenuPage() {
 
   const addEmptyRow = () => {
     setMenuItems([{ id: Date.now(), name: '', description: '', price: '0', category: 'Varie', isNew: true }, ...menuItems]);
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(selectedIds.length === menuItems.length ? [] : menuItems.map(i => i.id));
   };
 
   const handleItemChange = (id, campo, valore) => {
@@ -140,19 +141,20 @@ export default function MenuPage() {
 
       {/* Tabella */}
       <div className="bg-white border rounded-2xl p-6">
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           <button onClick={addEmptyRow} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">+ Aggiungi Riga</button>
+          <button onClick={toggleSelectAll} className="px-4 py-2 bg-stone-200 rounded-lg font-bold">Seleziona Tutto</button>
           <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold">Elimina ({selectedIds.length})</button>
           <button onClick={handleSaveUpdatedMenu} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">SALVA TUTTO</button>
         </div>
         <div className="space-y-2">
           {menuItems.map((item) => (
-            <div key={item.id} className="grid grid-cols-12 gap-2 p-2 bg-stone-50 rounded-lg items-center">
-              <input type="checkbox" onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} />
-              <input value={item.category} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-2 p-1 text-xs border rounded" />
-              <input value={item.name} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-4 p-1 text-sm border rounded" />
-              <input value={item.description} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-4 p-1 text-sm border rounded" />
-              <input value={item.price} onChange={(e) => handleItemChange(item.id, 'price', e.target.value)} className="col-span-1 p-1 text-sm border rounded" />
+            <div key={item.id} className={`grid grid-cols-12 gap-2 p-2 rounded-lg items-center ${selectedIds.includes(item.id) ? 'bg-red-50' : 'bg-stone-50'}`}>
+              <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} />
+              <input value={item.category || ''} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-2 p-1 text-xs border rounded" />
+              <input value={item.name || ''} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-4 p-1 text-sm border rounded" />
+              <input value={item.description || ''} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-4 p-1 text-sm border rounded" />
+              <input value={item.price || ''} onChange={(e) => handleItemChange(item.id, 'price', e.target.value)} className="col-span-1 p-1 text-sm border rounded" />
             </div>
           ))}
         </div>
