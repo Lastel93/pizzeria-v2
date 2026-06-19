@@ -42,15 +42,35 @@ export default function MenuPubblico({ params }) {
   return (
     <div className="min-h-screen bg-white p-4 font-serif" style={{ border: '20px solid red', borderImage: 'repeating-linear-gradient(45deg, red, red 10px, white 10px, white 20px) 20' }}>
       <div className="max-w-4xl mx-auto p-6 bg-white">
+        
+        {/* Header con link WhatsApp e Orari estesi */}
         <div className="flex justify-between items-start border-b-2 border-red-600 pb-6 mb-8">
-           <button className="bg-red-600 text-white font-black px-6 py-3 -rotate-2">ORDINA QUI</button>
+           <a 
+              href="https://wa.me/393395663620?text=Ciao%2C%20vorrei%20ordinare%20delle%20pizze" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-red-600 text-white font-black px-6 py-3 -rotate-2 hover:bg-red-700 transition"
+           >
+             ORDINA QUI
+           </a>
+           
            <div className="text-center">
              <h1 className="text-5xl font-black text-red-700 uppercase tracking-tighter">{menuData.name}</h1>
              <p className="text-red-500 font-bold">{menuData.address}</p>
            </div>
-           <div className="bg-red-600 text-white p-3 text-xs font-bold text-center">ORARI<br/>LUN-DOM 10.00-23.00</div>
+           
+           <div className="text-[9px] font-bold text-red-600 text-right leading-tight">
+              <div>LUN 10.00-23.00</div>
+              <div>MAR 10.00-23.00</div>
+              <div>MER 10.00-23.00</div>
+              <div>GIO 10.00-23.00</div>
+              <div>VEN 10.00-23.00</div>
+              <div>SAB 10.00-23.00</div>
+              <div>DOM 10.00-23.00</div>
+           </div>
         </div>
 
+        {/* Lista Piatti */}
         {orderedKeys.map(cat => (
           <div key={cat} className="mb-8">
             <h2 className="text-2xl font-black text-red-700 uppercase mb-4">{cat}</h2>
