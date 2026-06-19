@@ -8,66 +8,84 @@ export default function MenuPubblico({ params }) {
 
   useEffect(() => {
     async function fetchMenu() {
-      // Recuperiamo nome, indirizzo e tutti gli items (il DB restituirà la colonna 'category')
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('restaurants')
         .select('name, address, menu_items(*)')
         .eq('id', params.id)
         .single();
-      
       if (data) setMenuData(data);
       setLoading(false);
     }
     fetchMenu();
   }, [params.id]);
 
-  // Logica per raggruppare usando 'category'
-  const groupByCategory = (items) => {
-    // Definisci qui l'ordine che preferisci per le tue categorie
-    const order = ["Pizze", "Piatti", "Birre e Bevande", "Gelati", "Extra"];
-    
-    const grouped = items.reduce((acc, item) => {
-      // Usiamo 'category' invece di 'categoria'
-      const cat = item.category || "Extra";
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(item);
-      return acc;
-    }, {});
-    
-    // Ordiniamo le categorie basandoci sull'array 'order'
-    return Object.keys(grouped).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  // LOGICA GERARCHICA AGGIORNATA
+  const classifyItem = (item) => {
+    const text = `${item.name} ${item.category || ""}`.toLowerCase();
+    // Pizze
+    if (/pizza/i.test(text)) return { main: "Pizze", sub: /bianc/i.test(text) ? "Pizze Bianche" : "Pizze Rosse" };
+    // Piatti
+    if (/primo/i.test(text)) return { main: "Piatti", sub: "Primi" };
+    if (/secondo/i.test(text)) return { main: "Piatti", sub: "Secondi" };
+    if (/hamburg/i.test(text)) return { main: "Piatti", sub: "Hamburger" };
+    if (/kebab/i.test(text)) return { main: "Piatti", sub: "Kebab" };
+    if (/fritt|patatin/i.test(text)) return { main: "Piatti", sub: "Fritti" };
+    if (/falafel/i.test(text)) return { main: "Piatti", sub: "Falafel" };
+    if (/contorno/i.test(text)) return { main: "Piatti", sub: "Contorni" };
+    // Dolci
+    if (/dolce|gelat|ghiaccio/i.test(text)) return { main: "Dolci", sub: "Dolci & Gelati" };
+    // Bevande
+    if (/acq|bibit|birr|vin|amar|caff/i.test(text)) return { main: "Bevande", sub: "Bevande" };
+    // Extra
+    return { main: "Extra", sub: "Altro" };
   };
 
-  if (loading) return <div className="text-center p-10 font-serif">Caricamento menu...</div>;
-  if (!menuData) return <div className="text-center p-10 font-serif">Menu non trovato.</div>;
+  if (loading) return <div>Caricamento...</div>;
 
-  const categories = groupByCategory(menuData.menu_items || []);
+  const hierarchy = (menuData.menu_items || []).reduce((acc, item) => {
+    const { main, sub } = classifyItem(item);
+    if (!acc[main]) acc[main] = {};
+    if (!acc[main][sub]) acc[main][sub] = [];
+    acc[main][sub].push(item);
+    return acc;
+  }, {});
+
+  const order = ["Pizze", "Piatti", "Dolci", "Extra", "Bevande"];
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] p-4 md:p-8 font-serif">
-      <div className="border-[12px] md:border-[20px] border-[#D32F2F] p-6 md:p-12 max-w-4xl mx-auto">
-        <header className="text-center mb-12">
-          <h1 className="text-5xl md:text-7xl font-black text-[#D32F2F] uppercase tracking-tighter">{menuData.name}</h1>
-          <p className="text-[#D32F2F] font-bold text-md mt-2">{menuData.address}</p>
-        </header>
+    <div className="min-h-screen bg-white p-4 md:p-8 font-serif" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #FF0000 0, #FF0000 10px, #FFFFFF 10px, #FFFFFF 20px)' }}>
+      <div className="bg-white p-8 md:p-12 max-w-4xl mx-auto shadow-2xl border-2 border-red-600">
+        
+        {/* Header con layout Screenshot 2026-06-19 alle 15.18.18.jpg */}
+        <div className="flex justify-between items-start mb-8">
+          <button className="bg-red-600 text-white font-black px-6 py-4 transform -rotate-3 hover:scale-105 transition shadow-lg">ORDINA QUI</button>
+          <div className="text-center">
+            <h1 className="text-6xl font-black text-red-700 uppercase tracking-tighter">{menuData.name}</h1>
+            <p className="text-red-500 font-bold uppercase">{menuData.address}</p>
+          </div>
+          <div className="bg-red-600 text-white p-4 rounded-2xl text-xs font-bold w-32">
+            <div className="text-center font-black mb-1">ORARI</div>
+            LUN-DOM 10.00-23.00
+          </div>
+        </div>
 
-        {/* Mappa le categorie trovate */}
-        {categories.map((cat) => (
-          <div key={cat} className="mb-10">
-            <h2 className="text-2xl font-black text-[#D32F2F] uppercase border-b-2 border-[#D32F2F] mb-6">{cat}</h2>
-            <div className="grid md:grid-cols-2 gap-x-12 gap-y-6">
-              {menuData.menu_items
-                .filter(i => (i.category || "Extra") === cat)
-                .map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold text-[#D32F2F] text-lg">{item.name}</h3>
-                      <p className="text-xs text-stone-600 italic">{item.description}</p>
+        {/* Menu Items */}
+        {order.filter(m => hierarchy[m]).map(mainCat => (
+          <div key={mainCat} className="mt-8">
+            <h2 className="text-3xl font-black text-red-700 uppercase border-b-2 border-red-700 mb-6">{mainCat}</h2>
+            {Object.entries(hierarchy[mainCat]).map(([subCat, items]) => (
+              <div key={subCat} className="mb-6">
+                <h3 className="font-bold text-red-600 uppercase italic mb-3 underline">{subCat}</h3>
+                <div className="grid md:grid-cols-2 gap-x-8">
+                  {items.map((item, i) => (
+                    <div key={i} className="flex justify-between border-b border-red-100 py-2">
+                      <div><span className="font-bold text-red-900">{item.name}</span></div>
+                      <span className="font-bold text-red-700">€{item.price}</span>
                     </div>
-                    <span className="font-bold text-[#D32F2F]">€{item.price}</span>
-                  </div>
-              ))}
-            </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>
