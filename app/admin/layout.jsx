@@ -1,50 +1,19 @@
-'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-
 export default function AdminLayout({ children }) {
-  const pathname = usePathname(); // Intercetta la pagina attuale
-
   return (
-    <div className="flex min-h-screen bg-stone-50 font-sans">
-      
-      {/* Sidebar Laterale */}
-      <aside className="w-64 bg-[#1C2D21] text-white flex flex-col shadow-xl z-10">
-        <div className="p-8">
-          <h2 className="text-2xl font-bold tracking-tight">SmartMenu</h2>
-          <p className="text-sm text-stone-400 mt-1">Area Ristoratore</p>
-        </div>
-        
-        <nav className="flex-1 px-4 space-y-2 mt-2">
-          <Link 
-            href="/admin/dashboard" 
-            className={`block px-4 py-3 rounded-lg font-medium transition ${
-              pathname === '/admin/dashboard' 
-                ? 'bg-[#2A3F2F] text-white shadow-inner' 
-                : 'text-stone-300 hover:bg-[#2A3F2F] hover:text-white'
-            }`}
-          >
-            Dashboard
-          </Link>
-          
-          <Link 
-            href="/admin/menu" 
-            className={`block px-4 py-3 rounded-lg font-medium transition ${
-              pathname === '/admin/menu' 
-                ? 'bg-[#2A3F2F] text-white shadow-inner' 
-                : 'text-stone-300 hover:bg-[#2A3F2F] hover:text-white'
-            }`}
-          >
-            Il Mio Menu
-          </Link>
+    <div className="flex flex-col md:flex-row min-h-screen bg-stone-50">
+      {/* Sidebar: nascosta su mobile, visibile su desktop */}
+      <aside className="hidden md:flex w-64 bg-[#1C2D21] text-white p-6 flex-col">
+        <h2 className="text-xl font-black mb-8">SmartMenu.</h2>
+        <nav className="space-y-4">
+          <a href="/admin/dashboard" className="block p-2 rounded hover:bg-[#2d4a36]">Dashboard</a>
+          <a href="/admin/menu" className="block p-2 rounded hover:bg-[#2d4a36]">Il Mio Menu</a>
         </nav>
       </aside>
-
-      {/* Contenuto Principale */}
-      <main className="flex-1 flex flex-col overflow-y-auto">
+      
+      {/* Contenuto principale */}
+      <main className="flex-1 p-4 md:p-10 overflow-x-hidden">
         {children}
       </main>
-
     </div>
   );
 }
