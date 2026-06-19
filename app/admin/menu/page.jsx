@@ -130,6 +130,8 @@ export default function MenuPage() {
     fetchMenuItems(restaurant.id);
   };
 
+  if (loading) return <div className="p-10 text-center">Caricamento...</div>;
+
   return (
     <div className="p-10 max-w-6xl mx-auto space-y-8">
       <Link href="/admin/dashboard" className="text-sm font-semibold underline">← Torna alla Dashboard</Link>
@@ -140,20 +142,21 @@ export default function MenuPage() {
         <label className="flex items-center justify-center p-6 bg-white border-2 border-[#1C2D21] rounded-2xl cursor-pointer font-bold">📁 GALLERIA <input type="file" accept="image/*" multiple onChange={handleFileSelection} className="hidden" /></label>
       </div>
 
-      {localPreviews.length > 0 && <button onClick={handleSaveAllMenu} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl">💾 CONVERTI CON IA</button>}
+      {localPreviews.length > 0 && <button onClick={handleSaveAllMenu} disabled={uploading} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl">{uploading ? "Caricamento..." : "💾 CONVERTI CON IA"}</button>}
       {analyzing && <div className="text-center p-4 bg-amber-100 rounded-lg animate-pulse">L'IA sta leggendo il menu...</div>}
 
       <div className="bg-white border rounded-2xl p-6">
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           <button onClick={addEmptyRow} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">+ Aggiungi</button>
+          <button onClick={toggleSelectAll} className="px-4 py-2 bg-stone-200 rounded-lg font-bold">{selectedIds.length === menuItems.length ? "Deseleziona" : "Seleziona Tutto"}</button>
           <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold">Elimina ({selectedIds.length})</button>
-          <button onClick={handleSaveUpdatedMenu} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">SALVA TUTTO</button>
+          <button onClick={handleSaveUpdatedMenu} disabled={savingMenu} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">{savingMenu ? "Salvataggio..." : "SALVA TUTTO"}</button>
         </div>
         
         <div className="space-y-2">
           {menuItems.map((item) => (
             <div key={item.id} className="grid grid-cols-12 gap-2 p-2 bg-stone-50 rounded items-center text-sm">
-              <input type="checkbox" onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} />
+              <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} />
               <input value={item.category || ''} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-1 p-1 border rounded" placeholder="Cat." />
               <input value={item.name || ''} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-3 p-1 border rounded" placeholder="Nome" />
               <input value={item.description || ''} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-3 p-1 border rounded" placeholder="Descrizione" />
