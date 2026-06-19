@@ -72,25 +72,33 @@ export default function MenuPage() {
   const runAIAnalysis = async (imageUrl) => {
     try {
       setAnalyzing(true);
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-
       const response = await fetch('/api/parse-menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl }),
-        signal: controller.signal
       });
-      clearTimeout(timeoutId);
       
-      const piattiEstratti = await response.json();
-      if (!response.ok || piattiEstratti.length === 0) throw new Error("Nessun piatto trovato o errore IA");
-      
-      const piattiPronti = piattiEstratti.map(p => ({ ...p, restaurant_id: restaurant.id }));
-      await supabase.from('menu_items').insert(piattiPronti);
+      const datiGerarchici = await response.json();
+      if (!Array.isArray(datiGerarchici)) throw new Error("Formato dati non valido");
+
+      // Appiattiamo i dati per la tabella
+      const piattiPiatti = [];
+      datiGerarchici.forEach(cat => {
+        cat.items.forEach(item => {
+          piattiPiatti.push({
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            category: cat.category,
+            restaurant_id: restaurant.id
+          });
+        });
+      });
+
+      await supabase.from('menu_items').insert(piattiPiatti);
       fetchMenuItems(restaurant.id);
     } catch (err) {
-      alert("Errore lettura IA: " + (err.name === 'AbortError' ? "Tempo scaduto." : err.message));
+      alert("Errore lettura IA: " + err.message);
     } finally {
       setAnalyzing(false);
     }
