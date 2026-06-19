@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default function MenuPage() {
   const [restaurant, setRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -11,6 +13,7 @@ export default function MenuPage() {
   const [menuItems, setMenuItems] = useState([]);
   const [localPreviews, setLocalPreviews] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [savingMenu, setSavingMenu] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -55,12 +58,10 @@ export default function MenuPage() {
       if (!Array.isArray(piattiEstratti)) throw new Error("Risposta IA non valida");
 
       const piattiPronti = piattiEstratti.map(p => {
-        // Pulizia prezzo: toglie € e caratteri strani, virgola diventa punto
         let cleanPrice = "0";
         if (p.price) {
           cleanPrice = String(p.price).replace(',', '.').replace(/[^0-9.]/g, '');
         }
-
         return { 
           name: p.name || "Senza nome",
           description: p.description || "",
@@ -99,16 +100,33 @@ export default function MenuPage() {
     }
   };
 
+  const addEmptyRow = () => {
+    setMenuItems([{ id: Date.now(), name: '', description: '', price: '0', category: 'Varie', isNew: true }, ...menuItems]);
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(selectedIds.length === menuItems.length ? [] : menuItems.map(i => i.id));
+  };
+
   const handleItemChange = (id, campo, valore) => {
     setMenuItems(prev => prev.map(item => item.id === id ? { ...item, [campo]: valore } : item));
   };
 
   const handleSaveUpdatedMenu = async () => {
+    setSavingMenu(true);
     for (const item of menuItems) {
       if (item.isNew) await supabase.from('menu_items').insert([{ ...item, restaurant_id: restaurant.id, isNew: undefined }]);
       else await supabase.from('menu_items').update({ name: item.name, description: item.description, price: item.price, category: item.category }).eq('id', item.id);
     }
+    setSavingMenu(false);
     alert("Menu salvato!");
+    fetchMenuItems(restaurant.id);
+  };
+
+  const deleteSelected = async () => {
+    if(!confirm(`Eliminare ${selectedIds.length} piatti?`)) return;
+    await supabase.from('menu_items').delete().in('id', selectedIds);
+    setSelectedIds([]);
     fetchMenuItems(restaurant.id);
   };
 
@@ -116,23 +134,40 @@ export default function MenuPage() {
 
   return (
     <div className="p-10 max-w-5xl mx-auto space-y-8">
+      <Link href="/admin/dashboard" className="text-sm font-semibold underline">← Torna alla Dashboard</Link>
       <h1 className="text-4xl font-black">CARICA IL TUO MENU</h1>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <label className="flex items-center justify-center p-6 bg-[#1C2D21] text-white rounded-2xl cursor-pointer font-bold">📸 FOTOCAMERA <input type="file" accept="image/*" capture="environment" onChange={handleFileSelection} className="hidden" /></label>
         <label className="flex items-center justify-center p-6 bg-white border-2 border-[#1C2D21] rounded-2xl cursor-pointer font-bold">📁 GALLERIA <input type="file" accept="image/*" multiple onChange={handleFileSelection} className="hidden" /></label>
       </div>
-      {localPreviews.length > 0 && <button onClick={handleSaveAllMenu} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl">CONVERTI CON IA</button>}
-      {analyzing && <div className="p-4 bg-amber-100 rounded-lg">Analisi in corso...</div>}
-      
+
+      {localPreviews.length > 0 && (
+        <button onClick={handleSaveAllMenu} disabled={uploading} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl">
+          {uploading ? "Caricamento..." : "💾 CONVERTI CON IA"}
+        </button>
+      )}
+
+      {analyzing && <div className="text-center p-4 bg-amber-100 rounded-lg animate-pulse">L'IA sta leggendo il menu...</div>}
+
       <div className="bg-white border rounded-2xl p-6">
-        <button onClick={handleSaveUpdatedMenu} className="mb-4 px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">SALVA TUTTO</button>
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <button onClick={addEmptyRow} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">+ Aggiungi Riga</button>
+          <button onClick={toggleSelectAll} className="px-4 py-2 bg-stone-200 rounded-lg font-bold">Seleziona Tutto</button>
+          <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold">Elimina ({selectedIds.length})</button>
+          <button onClick={handleSaveUpdatedMenu} disabled={savingMenu} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">
+            {savingMenu ? "Salvataggio..." : "SALVA TUTTO"}
+          </button>
+        </div>
+        
         <div className="space-y-2">
           {menuItems.map((item) => (
-            <div key={item.id} className="grid grid-cols-12 gap-2 p-2 bg-stone-50 rounded items-center">
-              <input value={item.category} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-2 p-1 border rounded" />
-              <input value={item.name} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-4 p-1 border rounded" />
-              <input value={item.description} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-4 p-1 border rounded" />
-              <input value={item.price} onChange={(e) => handleItemChange(item.id, 'price', e.target.value)} className="col-span-2 p-1 border rounded" />
+            <div key={item.id} className={`grid grid-cols-12 gap-2 p-2 rounded-lg items-center ${selectedIds.includes(item.id) ? 'bg-red-50' : 'bg-stone-50'}`}>
+              <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} />
+              <input value={item.category || ''} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-2 p-1 text-xs border rounded" placeholder="Cat." />
+              <input value={item.name || ''} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-4 p-1 text-sm border rounded" placeholder="Nome Piatto" />
+              <input value={item.description || ''} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-4 p-1 text-sm border rounded" placeholder="Descrizione" />
+              <input value={item.price || ''} onChange={(e) => handleItemChange(item.id, 'price', e.target.value)} className="col-span-1 p-1 text-sm border rounded" placeholder="Prezzo" />
             </div>
           ))}
         </div>
