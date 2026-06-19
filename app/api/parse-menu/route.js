@@ -29,7 +29,7 @@ export async function POST(request) {
                 Ogni oggetto deve avere questi campi esatti:
                 - "name": il nome del piatto o della bevanda
                 - "description": gli ingredienti o la descrizione (se presenti, altrimenti stringa vuota)
-                - "price": il prezzo convertito in numero decimale (es. 7.50, se non presente metti 0)
+                - "price": il prezzo come stringa. Se sono presenti più prezzi per lo stesso piatto (es. piccolo/grande), scrivili separati da una barra (es: "5.00/8.00"). Se non presente metti "0".
                 - "category": la categoria del piatto (es. Pizze, Primi, Bevande, Dolci)
                 
                 Non inventare piatti. Estrai solo ciò che è visibile.`
