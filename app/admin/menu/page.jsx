@@ -58,14 +58,13 @@ export default function MenuPage() {
       if (!Array.isArray(piattiEstratti)) throw new Error("Risposta IA non valida");
 
       const piattiPronti = piattiEstratti.map(p => {
-        let cleanPrice = "0";
-        if (p.price) {
-          cleanPrice = String(p.price).replace(',', '.').replace(/[^0-9.]/g, '');
-        }
+        const cleanP = (val) => String(val || "0").replace(',', '.').replace(/[^0-9.]/g, '');
         return { 
           name: p.name || "Senza nome",
           description: p.description || "",
-          price: cleanPrice || "0",
+          price1: cleanP(p.price1),
+          price2: cleanP(p.price2),
+          price3: cleanP(p.price3),
           category: p.category || "Generico",
           restaurant_id: restaurant.id
         };
@@ -101,7 +100,7 @@ export default function MenuPage() {
   };
 
   const addEmptyRow = () => {
-    setMenuItems([{ id: Date.now(), name: '', description: '', price: '0', category: 'Varie', isNew: true }, ...menuItems]);
+    setMenuItems([{ id: Date.now(), name: '', description: '', price1: '0', price2: '0', price3: '0', category: 'Varie', isNew: true }, ...menuItems]);
   };
 
   const toggleSelectAll = () => {
@@ -115,8 +114,9 @@ export default function MenuPage() {
   const handleSaveUpdatedMenu = async () => {
     setSavingMenu(true);
     for (const item of menuItems) {
-      if (item.isNew) await supabase.from('menu_items').insert([{ ...item, restaurant_id: restaurant.id, isNew: undefined }]);
-      else await supabase.from('menu_items').update({ name: item.name, description: item.description, price: item.price, category: item.category }).eq('id', item.id);
+      const dataToSave = { name: item.name, description: item.description, price1: item.price1, price2: item.price2, price3: item.price3, category: item.category };
+      if (item.isNew) await supabase.from('menu_items').insert([{ ...dataToSave, restaurant_id: restaurant.id }]);
+      else await supabase.from('menu_items').update(dataToSave).eq('id', item.id);
     }
     setSavingMenu(false);
     alert("Menu salvato!");
@@ -130,44 +130,36 @@ export default function MenuPage() {
     fetchMenuItems(restaurant.id);
   };
 
-  if (loading) return <div className="p-10 text-center">Caricamento...</div>;
-
   return (
-    <div className="p-10 max-w-5xl mx-auto space-y-8">
+    <div className="p-10 max-w-6xl mx-auto space-y-8">
       <Link href="/admin/dashboard" className="text-sm font-semibold underline">← Torna alla Dashboard</Link>
       <h1 className="text-4xl font-black">CARICA IL TUO MENU</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <label className="flex items-center justify-center p-6 bg-[#1C2D21] text-white rounded-2xl cursor-pointer font-bold">📸 FOTOCAMERA <input type="file" accept="image/*" capture="environment" onChange={handleFileSelection} className="hidden" /></label>
         <label className="flex items-center justify-center p-6 bg-white border-2 border-[#1C2D21] rounded-2xl cursor-pointer font-bold">📁 GALLERIA <input type="file" accept="image/*" multiple onChange={handleFileSelection} className="hidden" /></label>
       </div>
 
-      {localPreviews.length > 0 && (
-        <button onClick={handleSaveAllMenu} disabled={uploading} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl">
-          {uploading ? "Caricamento..." : "💾 CONVERTI CON IA"}
-        </button>
-      )}
-
+      {localPreviews.length > 0 && <button onClick={handleSaveAllMenu} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl">💾 CONVERTI CON IA</button>}
       {analyzing && <div className="text-center p-4 bg-amber-100 rounded-lg animate-pulse">L'IA sta leggendo il menu...</div>}
 
       <div className="bg-white border rounded-2xl p-6">
-        <div className="flex gap-2 mb-6 flex-wrap">
-          <button onClick={addEmptyRow} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">+ Aggiungi Riga</button>
-          <button onClick={toggleSelectAll} className="px-4 py-2 bg-stone-200 rounded-lg font-bold">Seleziona Tutto</button>
+        <div className="flex gap-2 mb-6">
+          <button onClick={addEmptyRow} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">+ Aggiungi</button>
           <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold">Elimina ({selectedIds.length})</button>
-          <button onClick={handleSaveUpdatedMenu} disabled={savingMenu} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">
-            {savingMenu ? "Salvataggio..." : "SALVA TUTTO"}
-          </button>
+          <button onClick={handleSaveUpdatedMenu} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">SALVA TUTTO</button>
         </div>
         
         <div className="space-y-2">
           {menuItems.map((item) => (
-            <div key={item.id} className={`grid grid-cols-12 gap-2 p-2 rounded-lg items-center ${selectedIds.includes(item.id) ? 'bg-red-50' : 'bg-stone-50'}`}>
-              <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} />
-              <input value={item.category || ''} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-2 p-1 text-xs border rounded" placeholder="Cat." />
-              <input value={item.name || ''} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-4 p-1 text-sm border rounded" placeholder="Nome Piatto" />
-              <input value={item.description || ''} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-4 p-1 text-sm border rounded" placeholder="Descrizione" />
-              <input value={item.price || ''} onChange={(e) => handleItemChange(item.id, 'price', e.target.value)} className="col-span-1 p-1 text-sm border rounded" placeholder="Prezzo" />
+            <div key={item.id} className="grid grid-cols-12 gap-2 p-2 bg-stone-50 rounded items-center text-sm">
+              <input type="checkbox" onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} />
+              <input value={item.category || ''} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-1 p-1 border rounded" placeholder="Cat." />
+              <input value={item.name || ''} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-3 p-1 border rounded" placeholder="Nome" />
+              <input value={item.description || ''} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-3 p-1 border rounded" placeholder="Descrizione" />
+              <input value={item.price1 || ''} onChange={(e) => handleItemChange(item.id, 'price1', e.target.value)} className="col-span-1 p-1 border rounded text-center" placeholder="P1" />
+              <input value={item.price2 || ''} onChange={(e) => handleItemChange(item.id, 'price2', e.target.value)} className="col-span-1 p-1 border rounded text-center" placeholder="P2" />
+              <input value={item.price3 || ''} onChange={(e) => handleItemChange(item.id, 'price3', e.target.value)} className="col-span-1 p-1 border rounded text-center" placeholder="P3" />
             </div>
           ))}
         </div>
