@@ -11,7 +11,7 @@ export default function DashboardPage() {
   const [updatingData, setUpdatingData] = useState(false);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('3395663620'); // Telefono di default
+  const [phone, setPhone] = useState('3333333333'); // Telefono di default
 
   useEffect(() => {
     async function loadData() {
