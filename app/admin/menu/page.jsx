@@ -133,33 +133,33 @@ export default function MenuPage() {
   if (loading) return <div className="p-10 text-center">Caricamento...</div>;
 
   return (
-    <div className="p-10 max-w-6xl mx-auto space-y-8">
+    <div className="p-4 md:p-10 max-w-6xl mx-auto space-y-8">
       <Link href="/admin/dashboard" className="text-sm font-semibold underline">← Torna alla Dashboard</Link>
-      <h1 className="text-4xl font-black">CARICA IL TUO MENU</h1>
+      <h1 className="text-3xl md:text-4xl font-black">CARICA IL TUO MENU</h1>
 
       <div className="grid grid-cols-2 gap-4">
-        <label className="flex items-center justify-center p-6 bg-[#1C2D21] text-white rounded-2xl cursor-pointer font-bold">📸 FOTOCAMERA <input type="file" accept="image/*" capture="environment" onChange={handleFileSelection} className="hidden" /></label>
-        <label className="flex items-center justify-center p-6 bg-white border-2 border-[#1C2D21] rounded-2xl cursor-pointer font-bold">📁 GALLERIA <input type="file" accept="image/*" multiple onChange={handleFileSelection} className="hidden" /></label>
+        <label className="flex items-center justify-center p-4 md:p-6 bg-[#1C2D21] text-white rounded-2xl cursor-pointer font-bold text-sm md:text-base">📸 FOTOCAMERA <input type="file" accept="image/*" capture="environment" onChange={handleFileSelection} className="hidden" /></label>
+        <label className="flex items-center justify-center p-4 md:p-6 bg-white border-2 border-[#1C2D21] rounded-2xl cursor-pointer font-bold text-sm md:text-base">📁 GALLERIA <input type="file" accept="image/*" multiple onChange={handleFileSelection} className="hidden" /></label>
       </div>
 
       {localPreviews.length > 0 && <button onClick={handleSaveAllMenu} disabled={uploading} className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl">{uploading ? "Caricamento..." : "💾 CONVERTI CON IA"}</button>}
       {analyzing && <div className="text-center p-4 bg-amber-100 rounded-lg animate-pulse">L'IA sta leggendo il menu...</div>}
 
-      <div className="bg-white border rounded-2xl p-6">
+      <div className="bg-white border rounded-2xl p-4 md:p-6">
         <div className="flex gap-2 mb-6 flex-wrap">
-          <button onClick={addEmptyRow} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">+ Aggiungi</button>
-          <button onClick={toggleSelectAll} className="px-4 py-2 bg-stone-200 rounded-lg font-bold">{selectedIds.length === menuItems.length ? "Deseleziona" : "Seleziona Tutto"}</button>
-          <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold">Elimina ({selectedIds.length})</button>
-          <button onClick={handleSaveUpdatedMenu} disabled={savingMenu} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold">{savingMenu ? "Salvataggio..." : "SALVA TUTTO"}</button>
+          <button onClick={addEmptyRow} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm">+ Aggiungi</button>
+          <button onClick={toggleSelectAll} className="px-4 py-2 bg-stone-200 rounded-lg font-bold text-sm">{selectedIds.length === menuItems.length ? "Deseleziona" : "Seleziona Tutto"}</button>
+          <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm">Elimina ({selectedIds.length})</button>
+          <button onClick={handleSaveUpdatedMenu} disabled={savingMenu} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-bold text-sm">{savingMenu ? "Salvataggio..." : "SALVA TUTTO"}</button>
         </div>
         
         <div className="space-y-2">
           {menuItems.map((item) => (
-            <div key={item.id} className="grid grid-cols-12 gap-2 p-2 bg-stone-50 rounded items-center text-sm">
-              <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} />
-              <input value={item.category || ''} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-1 p-1 border rounded" placeholder="Cat." />
-              <input value={item.name || ''} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-3 p-1 border rounded" placeholder="Nome" />
-              <input value={item.description || ''} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-3 p-1 border rounded" placeholder="Descrizione" />
+            <div key={item.id} className="grid grid-cols-12 gap-1 md:gap-2 p-1 md:p-2 bg-stone-50 rounded items-center text-xs md:text-sm">
+              <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => setSelectedIds(prev => prev.includes(item.id) ? prev.filter(i=>i!==item.id) : [...prev, item.id])} className="col-span-1" />
+              <input value={item.category || ''} onChange={(e) => handleItemChange(item.id, 'category', e.target.value)} className="col-span-2 md:col-span-1 p-1 border rounded" placeholder="Cat." />
+              <input value={item.name || ''} onChange={(e) => handleItemChange(item.id, 'name', e.target.value)} className="col-span-4 md:col-span-3 p-1 border rounded" placeholder="Nome" />
+              <input value={item.description || ''} onChange={(e) => handleItemChange(item.id, 'description', e.target.value)} className="col-span-2 md:col-span-4 p-1 border rounded hidden md:block" placeholder="Descrizione" />
               <input value={item.price1 || ''} onChange={(e) => handleItemChange(item.id, 'price1', e.target.value)} className="col-span-1 p-1 border rounded text-center" placeholder="P1" />
               <input value={item.price2 || ''} onChange={(e) => handleItemChange(item.id, 'price2', e.target.value)} className="col-span-1 p-1 border rounded text-center" placeholder="P2" />
               <input value={item.price3 || ''} onChange={(e) => handleItemChange(item.id, 'price3', e.target.value)} className="col-span-1 p-1 border rounded text-center" placeholder="P3" />
