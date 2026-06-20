@@ -8,16 +8,8 @@ export default function MenuPubblico({ params }) {
 
   useEffect(() => {
     async function fetchMenu() {
-      const { data } = await supabase
-        .from('restaurants')
-        .select('name, address, menu_items(*)')
-        .eq('id', params.id)
-        .single();
-      
-      if (data) {
-        const sortedItems = (data.menu_items || []).sort((a, b) => a.id - b.id);
-        setMenuData({ ...data, menu_items: sortedItems });
-      }
+      const { data } = await supabase.from('restaurants').select('*, menu_items(*)').eq('id', params.id).single();
+      if (data) setMenuData(data);
       setLoading(false);
     }
     fetchMenu();
@@ -25,71 +17,39 @@ export default function MenuPubblico({ params }) {
 
   if (loading) return <div>Caricamento...</div>;
 
-  const grouped = (menuData.menu_items || []).reduce((acc, item) => {
-    const cat = item.category || "Extra";
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(item);
-    return acc;
-  }, {});
-
-  const orderedKeys = Object.keys(grouped).sort((a, b) => {
-    if (a === "Pizze Rosse") return -1;
-    if (b === "Pizze Rosse") return 1;
-    if (a === "Pizze Bianche") return -1;
-    return 0;
-  });
+  const phone = menuData.phone || '3395663620';
+  const whatsappUrl = `https://wa.me/39${phone}?text=Ciao%2C%20vorrei%20ordinare%20delle%20pizze`;
 
   return (
-    <div className="min-h-screen bg-white p-4 font-serif" style={{ border: '20px solid red', borderImage: 'repeating-linear-gradient(45deg, red, red 10px, white 10px, white 20px) 20' }}>
-      <div className="max-w-4xl mx-auto p-6 bg-white">
-        
-        {/* Header con link WhatsApp e Orari estesi */}
-        <div className="flex justify-between items-start border-b-2 border-red-600 pb-6 mb-8">
-           <a 
-              href="https://wa.me/393395663620?text=Ciao%2C%20vorrei%20ordinare%20delle%20pizze" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="bg-red-600 text-white font-black px-6 py-3 -rotate-2 hover:bg-red-700 transition"
-           >
-             ORDINA QUI
-           </a>
-           
-           <div className="text-center">
-             <h1 className="text-5xl font-black text-red-700 uppercase tracking-tighter">{menuData.name}</h1>
-             <p className="text-red-500 font-bold">{menuData.address}</p>
-           </div>
-           
-           <div className="text-[9px] font-bold text-red-600 text-right leading-tight">
-              <div>LUN 10.00-23.00</div>
-              <div>MAR 10.00-23.00</div>
-              <div>MER 10.00-23.00</div>
-              <div>GIO 10.00-23.00</div>
-              <div>VEN 10.00-23.00</div>
-              <div>SAB 10.00-23.00</div>
-              <div>DOM 10.00-23.00</div>
-           </div>
+    <div className="min-h-screen bg-white p-2 md:p-4 font-serif">
+      <div className="max-w-2xl mx-auto p-4 bg-white border-4 border-red-600">
+        <div className="flex flex-col items-center border-b-2 border-red-600 pb-6 mb-6">
+           <h1 className="text-4xl font-black text-red-700 uppercase text-center">{menuData.name}</h1>
+           <p className="text-red-500 font-bold mb-4">{menuData.address}</p>
+           <a href={whatsappUrl} target="_blank" className="bg-red-600 text-white font-black px-8 py-3 rounded-full shadow-lg">ORDINA SU WHATSAPP</a>
         </div>
-
-        {/* Lista Piatti */}
-        {orderedKeys.map(cat => (
-          <div key={cat} className="mb-8">
-            <h2 className="text-2xl font-black text-red-700 uppercase mb-4">{cat}</h2>
-            <div className="grid md:grid-cols-2 gap-x-12">
-              {grouped[cat].map((item, i) => (
-                <div key={i} className="flex justify-between items-start border-b border-red-100 py-2">
-                  <div className="flex-1">
-                    <span className="font-bold text-red-900 block">{item.name}</span>
-                    <p className="text-[10px] text-red-400 italic leading-tight">{item.description}</p>
-                  </div>
-                  {/* Rendering dinamico dei prezzi */}
-                  <div className="flex items-center gap-2 font-bold text-red-700 pl-4 whitespace-nowrap">
-                    {parseFloat(item.price1) > 0 && <span>€{item.price1}</span>}
-                    {parseFloat(item.price2) > 0 && <><span>/</span><span>€{item.price2}</span></>}
-                    {parseFloat(item.price3) > 0 && <><span>/</span><span>€{item.price3}</span></>}
-                  </div>
+        
+        {/* Lista piatti ottimizzata per mobile */}
+        {Object.entries(menuData.menu_items.reduce((acc, item) => {
+           const cat = item.category || "Extra";
+           if (!acc[cat]) acc[cat] = [];
+           acc[cat].push(item);
+           return acc;
+        }, {})).map(([cat, items]) => (
+          <div key={cat} className="mb-6">
+            <h2 className="text-xl font-black text-red-700 uppercase border-b border-red-200 mb-2">{cat}</h2>
+            {items.map((item, i) => (
+              <div key={i} className="flex justify-between items-center py-2 border-b border-stone-100 text-sm">
+                <div>
+                  <span className="font-bold block">{item.name}</span>
+                  <span className="text-[10px] text-stone-500">{item.description}</span>
                 </div>
-              ))}
-            </div>
+                <div className="font-bold text-red-700">
+                  {parseFloat(item.price1) > 0 && <span>€{item.price1}</span>}
+                  {parseFloat(item.price2) > 0 && <span> / €{item.price2}</span>}
+                </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>
