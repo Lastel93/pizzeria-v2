@@ -12,25 +12,26 @@ export async function POST(request) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        // Cambio modello qui
+        model: 'gpt-4o-mini', 
         temperature: 0,
-        max_tokens: 4096,
+        max_tokens: 2048, 
         response_format: { type: "json_object" },
         messages: [
           {
             role: 'system',
-           content: `Sei un esperto di trascrizione menu. 
+            content: `Sei un esperto di trascrizione menu. 
 REGOLE:
 1. Ritorna un JSON con "menu" contenente oggetti con: "name", "description", "price1", "price2", "price3", "category".
-2. Se un prezzo non esiste, metti stringa vuota o "0".
+2. Se un prezzo non esiste, metti "0".
 3. Estrai ogni variante di prezzo che trovi sulla riga del piatto.
-4. Se non capisci la category, lascia vuota o "0"`
+4. Se non capisci la category, metti "Varie".`
           },
           {
             role: 'user',
             content: [
               { type: 'text', text: "Trascrivi ogni piatto. Assegna tu la categoria in base al contesto. Ritorna solo il JSON." },
-              { type: 'image_url', image_url: { url: imageUrl, detail: 'high' } }
+              { type: 'image_url', image_url: { url: imageUrl, detail: 'low' } } // Impostato a 'low' per risparmiare ancora più token
             ]
           }
         ]
@@ -38,11 +39,18 @@ REGOLE:
     });
 
     const aiData = await response.json();
+    
+    // Controllo di sicurezza se l'IA risponde con errore
+    if (!aiData.choices || !aiData.choices[0]) {
+        throw new Error(aiData.error?.message || "Errore chiamata OpenAI");
+    }
+
     const content = aiData.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '');
     const data = JSON.parse(content);
     
     return NextResponse.json(data.menu || []);
   } catch (error) {
+    console.error("Errore API parse-menu:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
